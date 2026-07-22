@@ -67,7 +67,7 @@
                     <i class="fa-solid fa-gauge-high text-amber-400"></i>
                 </div>
                 <div class="text-3xl font-extrabold text-amber-400 tracking-tight"><span id="speedCmMin">4.26</span> <span class="text-sm font-normal text-slate-400">cm/min</span></div>
-                <div class="mt-2 text-xs text-slate-400">อัปเดตแบบเรียลไทม์ (1 นาที)</div>
+                <div class="mt-2 text-xs text-slate-400">อัปเดตจาก Google Sheets แบบเรียลไทม์</div>
             </div>
 
             <!-- Throughput (kg/h) Card -->
@@ -77,7 +77,7 @@
                     <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
                 </div>
                 <div class="text-3xl font-extrabold text-cyan-400 tracking-tight"><span id="speedKgH">128.5</span> <span class="text-sm font-normal text-slate-400">kg/h</span></div>
-                <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากความเร็วและขนาดท่อ</div>
+                <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากความเร็วอัตโนมัติ</div>
             </div>
 
             <!-- Timestamp Card -->
@@ -86,8 +86,8 @@
                     <span>เวลาและวันที่ข้อมูลล่าสุด</span>
                     <i class="fa-regular fa-clock text-purple-400"></i>
                 </div>
-                <div class="text-lg font-bold text-white tracking-tight truncate" id="currentTimestamp">22/7/2026, 12:45:50</div>
-                <div class="mt-2 text-xs text-slate-400">รอบเวลาบันทึก: ทุกๆ 4 ชม.</div>
+                <div class="text-lg font-bold text-white tracking-tight truncate" id="currentTimestamp">กำลังซิงค์ข้อมูล...</div>
+                <div class="mt-2 text-xs text-slate-400">รอบเวลาบันทึก: Google Sheets API</div>
             </div>
         </div>
 
@@ -128,7 +128,7 @@
             <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-base font-bold text-white flex items-center">
-                        <i class="fa-solid fa-chart-line text-amber-500 mr-2"></i> กราฟแนวโน้มความเร็วตามรอบเวลา (4 ชั่วโมง)
+                        <i class="fa-solid fa-chart-line text-amber-500 mr-2"></i> กราฟแนวโน้มความเร็วตามรอบเวลา
                     </h2>
                     <span class="text-xs text-slate-400">หน่วย: cm/min</span>
                 </div>
@@ -142,9 +142,9 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                 <div>
                     <h2 class="text-base font-bold text-white flex items-center">
-                        <i class="fa-solid fa-table-list text-purple-500 mr-2"></i> ประวัติการบันทึกข้อมูลตามรอบเวลา (Slot 4 ชม.)
+                        <i class="fa-solid fa-table-list text-purple-500 mr-2"></i> ประวัติการบันทึกข้อมูลตามรอบเวลา
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">ข้อมูลล่าสุดแสดงอยู่ด้านบนสุดตามที่คุณตั้งค่าไว้</p>
+                    <p class="text-xs text-slate-400 mt-0.5">ดึงข้อมูลอัตโนมัติจาก Google Sheets</p>
                 </div>
                 <button onclick="exportData()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-blue-600/20">
                     <i class="fa-solid fa-download mr-1.5"></i> Export CSV
@@ -164,38 +164,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/60 text-sm" id="historyTableBody">
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="py-3 px-4 font-medium text-white">EXT-01</td>
-                            <td class="py-3 px-4 text-slate-300">22/7/2026, 12:30:00</td>
-                            <td class="py-3 px-4 font-bold text-amber-400">4.26</td>
-                            <td class="py-3 px-4 text-cyan-400">128.5</td>
-                            <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
-                            <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">บันทึกแล้ว</span></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="py-3 px-4 font-medium text-white">EXT-01</td>
-                            <td class="py-3 px-4 text-slate-300">22/7/2026, 08:30:00</td>
-                            <td class="py-3 px-4 font-bold text-amber-400">4.18</td>
-                            <td class="py-3 px-4 text-cyan-400">125.0</td>
-                            <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
-                            <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">บันทึกแล้ว</span></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="py-3 px-4 font-medium text-white">EXT-01</td>
-                            <td class="py-3 px-4 text-slate-300">22/7/2026, 04:30:00</td>
-                            <td class="py-3 px-4 font-bold text-amber-400">4.30</td>
-                            <td class="py-3 px-4 text-cyan-400">130.2</td>
-                            <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
-                            <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">บันทึกแล้ว</span></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/40 transition">
-                            <td class="py-3 px-4 font-medium text-white">EXT-01</td>
-                            <td class="py-3 px-4 text-slate-300">22/7/2026, 00:30:00</td>
-                            <td class="py-3 px-4 font-bold text-amber-400">4.22</td>
-                            <td class="py-3 px-4 text-cyan-400">126.8</td>
-                            <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
-                            <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">บันทึกแล้ว</span></td>
-                        </tr>
+                        <!-- ข้อมูลจะถูกดึงมาแสดงผลที่นี่โดยอัตโนมัติ -->
                     </tbody>
                 </table>
             </div>
@@ -220,6 +189,9 @@
     </footer>
 
     <script>
+        // แทนที่ลิงก์ด้านล่างด้วย Web App URL ของคุณ (ที่ลงท้ายด้วย /exec)
+        const API_URL = "https://script.google.com/macros/s/AKfycbzBHUJ5tjZYPipEdFDMaLTVhTVQ6j4xdz1zC76r53p6nU4L70F4Sz9j29HU3SyfHMYE/exec";
+
         // Initialize Chart.js
         const ctx = document.getElementById('speedChart').getContext('2d');
         const speedChart = new Chart(ctx, {
@@ -252,12 +224,59 @@
                     y: {
                         grid: { color: 'rgba(51, 65, 85, 0.3)' },
                         ticks: { color: '#94a3b8' },
-                        min: 4.0,
-                        max: 4.5
+                        min: 0,
+                        max: 10
                     }
                 }
             }
         });
+
+        async function fetchIoTData() {
+            if (!API_URL || API_URL.includes("วาง_Web_App_URL")) {
+                console.warn("กรุณาใส่ Web App URL ของ Google Apps Script ในตัวแปร API_URL");
+                return;
+            }
+            try {
+                let response = await fetch(API_URL);
+                let data = await response.json();
+                
+                if (data && data.length > 0) {
+                    // เลือกข้อมูลแถวพบล่าสุดมาแสดงผล
+                    let latest = data[data.length - 1]; 
+                    
+                    // ดึงค่า Slot Speed หรือ Speed
+                    let speedVal = parseFloat(latest['Slot Speed'] || latest['speed'] || 0);
+                    document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
+                    document.getElementById('speedKgH').innerText = (speedVal * 30).toFixed(1);
+                    
+                    if(latest['Slot Timestamp'] || latest['timestamp']) {
+                        document.getElementById('currentTimestamp').innerText = latest['Slot Timestamp'] || latest['timestamp'];
+                    }
+
+                    // อัปเดตข้อมูลตารางประวัติจากข้อมูลใน Sheet
+                    let tbody = document.getElementById('historyTableBody');
+                    tbody.innerHTML = '';
+                    
+                    // แสดงข้อมูลย้อนหลัง 5 แถวล่าสุด
+                    let recentRows = data.slice(-5).reverse();
+                    recentRows.forEach(row => {
+                        let tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-800/40 transition";
+                        tr.innerHTML = `
+                            <td class="py-3 px-4 font-medium text-white">EXT-01</td>
+                            <td class="py-3 px-4 text-slate-300">${row['Slot Timestamp'] || row['timestamp'] || '-'}</td>
+                            <td class="py-3 px-4 font-bold text-amber-400">${row['Slot Speed'] || row['speed'] || '0'}</td>
+                            <td class="py-3 px-4 text-cyan-400">${((parseFloat(row['Slot Speed'] || row['speed']) || 0) * 30).toFixed(1)}</td>
+                            <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
+                            <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">บันทึกแล้ว</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching data from Google Sheets:", error);
+            }
+        }
 
         // Safe message box instead of alert()
         function alertBox(message) {
@@ -278,18 +297,12 @@
             if(line === '2') {
                 document.getElementById('prodSize').innerText = 'Ø 63 mm';
                 document.getElementById('prodPn').innerText = 'PN 16';
-                document.getElementById('speedCmMin').innerText = '6.45';
-                document.getElementById('speedKgH').innerText = '94.2';
             } else if(line === '3') {
                 document.getElementById('prodSize').innerText = 'Ø 200 mm';
                 document.getElementById('prodPn').innerText = 'PN 8';
-                document.getElementById('speedCmMin').innerText = '2.10';
-                document.getElementById('speedKgH').innerText = '185.0';
             } else {
                 document.getElementById('prodSize').innerText = 'Ø 110 mm';
                 document.getElementById('prodPn').innerText = 'PN 10';
-                document.getElementById('speedCmMin').innerText = '4.26';
-                document.getElementById('speedKgH').innerText = '128.5';
             }
             alertBox(`เปลี่ยนมุมมองไปยัง Line 0${line} เรียบร้อยแล้ว`);
         }
@@ -297,6 +310,10 @@
         function exportData() {
             alertBox('กำลังเตรียมไฟล์ CSV สำหรับดาวน์โหลดข้อมูลการผลิต...');
         }
+
+        // ดึงข้อมูลอัตโนมัติทุกๆ 5 วินาที
+        setInterval(fetchIoTData, 5000);
+        window.onload = fetchIoTData;
     </script>
 </body>
 </html>
