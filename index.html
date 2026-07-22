@@ -45,7 +45,6 @@
 
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- Top Metrics Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Machine Number Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
@@ -66,8 +65,8 @@
                     <span>ความเร็ว (Line Speed)</span>
                     <i class="fa-solid fa-gauge-high text-amber-400"></i>
                 </div>
-                <div class="text-3xl font-extrabold text-amber-400 tracking-tight"><span id="speedCmMin">4.26</span> <span class="text-sm font-normal text-slate-400">cm/min</span></div>
-                <div class="mt-2 text-xs text-slate-400">อัปเดตจาก Google Sheets แบบเรียลไทม์</div>
+                <div class="text-3xl font-extrabold text-amber-400 tracking-tight"><span id="speedCmMin">0.00</span> <span class="text-sm font-normal text-slate-400">cm/min</span></div>
+                <div class="mt-2 text-xs text-slate-400">อัปเดตจาก Google Sheets สดๆ</div>
             </div>
 
             <!-- Throughput (kg/h) Card -->
@@ -76,18 +75,18 @@
                     <span>อัตราการผลิต (Throughput)</span>
                     <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
                 </div>
-                <div class="text-3xl font-extrabold text-cyan-400 tracking-tight"><span id="speedKgH">128.5</span> <span class="text-sm font-normal text-slate-400">kg/h</span></div>
-                <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากความเร็วอัตโนมัติ</div>
+                <div class="text-3xl font-extrabold text-cyan-400 tracking-tight"><span id="speedKgH">0.0</span> <span class="text-sm font-normal text-slate-400">kg/h</span></div>
+                <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากความเร็วเรียลไทม์</div>
             </div>
 
             <!-- Timestamp Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
-                    <span>เวลาและวันที่ข้อมูลล่าสุด</span>
+                    <span>เวลาข้อมูลล่าสุด</span>
                     <i class="fa-regular fa-clock text-purple-400"></i>
                 </div>
-                <div class="text-lg font-bold text-white tracking-tight truncate" id="currentTimestamp">กำลังซิงค์ข้อมูล...</div>
-                <div class="mt-2 text-xs text-slate-400">รอบเวลาบันทึก: Google Sheets API</div>
+                <div class="text-sm font-bold text-white tracking-tight truncate mt-1" id="currentTimestamp">-</div>
+                <div class="mt-2 text-xs text-slate-400">ซิงค์กับ ESP32 อัตโนมัติ</div>
             </div>
         </div>
 
@@ -128,7 +127,7 @@
             <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-base font-bold text-white flex items-center">
-                        <i class="fa-solid fa-chart-line text-amber-500 mr-2"></i> กราฟแนวโน้มความเร็วตามรอบเวลา
+                        <i class="fa-solid fa-chart-line text-amber-500 mr-2"></i> กราฟแนวโน้มความเร็วแบบเรียลไทม์
                     </h2>
                     <span class="text-xs text-slate-400">หน่วย: cm/min</span>
                 </div>
@@ -142,9 +141,9 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                 <div>
                     <h2 class="text-base font-bold text-white flex items-center">
-                        <i class="fa-solid fa-table-list text-purple-500 mr-2"></i> ประวัติการบันทึกข้อมูลตามรอบเวลา
+                        <i class="fa-solid fa-table-list text-purple-500 mr-2"></i> ประวัติข้อมูลที่ส่งมาจาก ESP32
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">ดึงข้อมูลอัตโนมัติจาก Google Sheets</p>
+                    <p class="text-xs text-slate-400 mt-0.5">ข้อมูลจาก Google Sheets (อัปเดตอัตโนมัติ)</p>
                 </div>
                 <button onclick="exportData()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-blue-600/20">
                     <i class="fa-solid fa-download mr-1.5"></i> Export CSV
@@ -156,15 +155,15 @@
                     <thead>
                         <tr class="border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                             <th class="py-3 px-4">เลขเครื่อง</th>
-                            <th class="py-3 px-4">เวลาตามรอบ (Scheduled Time)</th>
+                            <th class="py-3 px-4">เวลา (Timestamp)</th>
                             <th class="py-3 px-4">ความเร็ว (cm/min)</th>
                             <th class="py-3 px-4">Throughput (kg/h)</th>
-                            <th class="py-3 px-4">สเปคสินค้า (Size / PN / PE)</th>
+                            <th class="py-3 px-4">สเปคสินค้า</th>
                             <th class="py-3 px-4 text-center">สถานะ</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/60 text-sm" id="historyTableBody">
-                        <!-- ข้อมูลจะถูกดึงมาแสดงผลที่นี่โดยอัตโนมัติ -->
+                        <!-- โหลดข้อมูลด้วย JavaScript -->
                     </tbody>
                 </table>
             </div>
@@ -172,7 +171,7 @@
 
     </main>
 
-    <!-- Custom Modal for Alerts (No alert() used) -->
+    <!-- Custom Modal for Alerts -->
     <div id="customModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
             <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400 text-xl">
@@ -189,7 +188,7 @@
     </footer>
 
     <script>
-        // แทนที่ลิงก์ด้านล่างด้วย Web App URL ของคุณ (ที่ลงท้ายด้วย /exec)
+        // ใส่ Web App URL ของคุณที่นี่ (ลงท้ายด้วย /exec)
         const API_URL = "https://script.google.com/macros/s/AKfycbzBHUJ5tjZYPipEdFDMaLTVhTVQ6j4xdz1zC76r53p6nU4L70F4Sz9j29HU3SyfHMYE/exec";
 
         // Initialize Chart.js
@@ -197,17 +196,17 @@
         const speedChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['00:30', '04:30', '08:30', '12:30'],
+                labels: [],
                 datasets: [{
                     label: 'Speed (cm/min)',
-                    data: [4.22, 4.30, 4.18, 4.26],
+                    data: [],
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.1)',
                     borderWidth: 3,
                     fill: true,
                     tension: 0.3,
                     pointBackgroundColor: '#f59e0b',
-                    pointRadius: 5
+                    pointRadius: 4
                 }]
             },
             options: {
@@ -219,63 +218,87 @@
                 scales: {
                     x: {
                         grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                        ticks: { color: '#94a3b8' }
+                        ticks: { color: '#94a3b8', maxTicksLimit: 6 }
                     },
                     y: {
                         grid: { color: 'rgba(51, 65, 85, 0.3)' },
                         ticks: { color: '#94a3b8' },
-                        min: 0,
-                        max: 10
+                        min: 0
                     }
                 }
             }
         });
 
+        // ฟังก์ชันดึงข้อมูลจาก Google Sheets มาแสดงผลเรียลไทม์
         async function fetchIoTData() {
             if (!API_URL || API_URL.includes("วาง_Web_App_URL")) {
-                console.warn("กรุณาใส่ Web App URL ของ Google Apps Script ในตัวแปร API_URL");
+                console.warn("ยังไม่ได้ใส่ Web App URL ในโค้ดหน้าเว็บ");
                 return;
             }
+
             try {
                 let response = await fetch(API_URL);
                 let data = await response.json();
                 
                 if (data && data.length > 0) {
-                    // เลือกข้อมูลแถวพบล่าสุดมาแสดงผล
-                    let latest = data[data.length - 1]; 
-                    
-                    // ดึงค่า Slot Speed หรือ Speed
-                    let speedVal = parseFloat(latest['Slot Speed'] || latest['speed'] || 0);
-                    document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
-                    document.getElementById('speedKgH').innerText = (speedVal * 30).toFixed(1);
-                    
-                    if(latest['Slot Timestamp'] || latest['timestamp']) {
-                        document.getElementById('currentTimestamp').innerText = latest['Slot Timestamp'] || latest['timestamp'];
-                    }
+                    // กรองเฉพาะแถวที่มีข้อมูล Speed หรือ Timestamp จริงๆ
+                    let validData = data.filter(item => item.Timestamp && item.Timestamp !== "");
+                    if (validData.length === 0) validData = data; // fallback ถ้ากรองหมด
 
-                    // อัปเดตข้อมูลตารางประวัติจากข้อมูลใน Sheet
-                    let tbody = document.getElementById('historyTableBody');
-                    tbody.innerHTML = '';
+                    let latest = validData[validData.length - 1]; // ข้อมูลล่าสุด
                     
-                    // แสดงข้อมูลย้อนหลัง 5 แถวล่าสุด
-                    let recentRows = data.slice(-5).reverse();
-                    recentRows.forEach(row => {
-                        let tr = document.createElement('tr');
-                        tr.className = "hover:bg-slate-800/40 transition";
-                        tr.innerHTML = `
-                            <td class="py-3 px-4 font-medium text-white">EXT-01</td>
-                            <td class="py-3 px-4 text-slate-300">${row['Slot Timestamp'] || row['timestamp'] || '-'}</td>
-                            <td class="py-3 px-4 font-bold text-amber-400">${row['Slot Speed'] || row['speed'] || '0'}</td>
-                            <td class="py-3 px-4 text-cyan-400">${((parseFloat(row['Slot Speed'] || row['speed']) || 0) * 30).toFixed(1)}</td>
-                            <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
-                            <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">บันทึกแล้ว</span></td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
+                    let speedVal = parseFloat(latest.Speed) || 0;
+                    let throughputVal = (speedVal * 30).toFixed(1);
+
+                    // อัปเดตการแสดงผลการ์ดด้านบน
+                    document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
+                    document.getElementById('speedKgH').innerText = throughputVal;
+                    document.getElementById('currentTimestamp').innerText = latest.Timestamp ? new Date(latest.Timestamp).toLocaleString('th-TH') : '-';
+
+                    // อัปเดตตารางประวัติ
+                    updateTable(validData.slice(-10).reverse()); // แสดง 10 รายการล่าสุด
+
+                    // อัปเดตกราฟ
+                    updateChart(validData.slice(-15));
                 }
             } catch (error) {
-                console.error("Error fetching data from Google Sheets:", error);
+                console.error("Error fetching IoT data:", error);
             }
+        }
+
+        function updateTable(records) {
+            let tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            records.forEach(row => {
+                let timeStr = row.Timestamp ? new Date(row.Timestamp).toLocaleString('th-TH') : '-';
+                let speed = parseFloat(row.Speed) || 0;
+                let tp = (speed * 30).toFixed(1);
+
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-medium text-white">EXT-01</td>
+                    <td class="py-3 px-4 text-slate-300">${timeStr}</td>
+                    <td class="py-3 px-4 font-bold text-amber-400">${speed.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-cyan-400">${tp}</td>
+                    <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
+                    <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateChart(records) {
+            let labels = records.map(r => {
+                let d = new Date(r.Timestamp);
+                return isNaN(d) ? '' : d.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            });
+            let values = records.map(r => parseFloat(r.Speed) || 0);
+
+            speedChart.data.labels = labels;
+            speedChart.data.datasets[0].data = values;
+            speedChart.update();
         }
 
         // Safe message box instead of alert()
@@ -311,7 +334,7 @@
             alertBox('กำลังเตรียมไฟล์ CSV สำหรับดาวน์โหลดข้อมูลการผลิต...');
         }
 
-        // ดึงข้อมูลอัตโนมัติทุกๆ 5 วินาที
+        // ดึงข้อมูลทุกๆ 5 วินาที
         setInterval(fetchIoTData, 5000);
         window.onload = fetchIoTData;
     </script>
