@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Manufacturing IoT Dashboard</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN for production trends -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome for industrial icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -29,7 +25,6 @@
             </div>
         </div>
         
-        <!-- Line Selector & Live Badge -->
         <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-full">
                 <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
@@ -66,7 +61,7 @@
                     <i class="fa-solid fa-gauge-high text-amber-400"></i>
                 </div>
                 <div class="text-3xl font-extrabold text-amber-400 tracking-tight"><span id="speedCmMin">0.00</span> <span class="text-sm font-normal text-slate-400">cm/min</span></div>
-                <div class="mt-2 text-xs text-slate-400">อัปเดตจาก Google Sheets สดๆ</div>
+                <div class="mt-2 text-xs text-slate-400">ซิงค์จาก Google Sheets สดๆ</div>
             </div>
 
             <!-- Throughput (kg/h) Card -->
@@ -143,7 +138,7 @@
                     <h2 class="text-base font-bold text-white flex items-center">
                         <i class="fa-solid fa-table-list text-purple-500 mr-2"></i> ประวัติข้อมูลที่ส่งมาจาก ESP32
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">ข้อมูลจาก Google Sheets (อัปเดตอัตโนมัติ)</p>
+                    <p class="text-xs text-slate-400 mt-0.5">ข้อมูลจาก Google Sheets (เรียงจากล่าสุดไปเก่าสุด)</p>
                 </div>
                 <button onclick="exportData()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition shadow-lg shadow-blue-600/20">
                     <i class="fa-solid fa-download mr-1.5"></i> Export CSV
@@ -171,7 +166,6 @@
 
     </main>
 
-    <!-- Custom Modal for Alerts -->
     <div id="customModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4">
             <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400 text-xl">
@@ -189,7 +183,7 @@
 
     <script>
         // ใส่ Web App URL ของคุณที่นี่ (ลงท้ายด้วย /exec)
-        const API_URL = "https://script.google.com/macros/s/AKfycbzBHUJ5tjZYPipEdFDMaLTVhTVQ6j4xdz1zC76r53p6nU4L70F4Sz9j29HU3SyfHMYE/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzBHUJ5tjZYPipEdFDMaLTVhTVQ6j4xdz1zC76r53p6nU4L70F4Sz9j29HU3SyfHMYE/exec"; // ใช้ URL ของคุณ
 
         // Initialize Chart.js
         const ctx = document.getElementById('speedChart').getContext('2d');
@@ -229,7 +223,7 @@
             }
         });
 
-        // ฟังก์ชันดึงข้อมูลจาก Google Sheets มาแสดงผลเรียลไทม์
+        // ฟังก์ชันดึงข้อมูลจาก Google Sheets และเรียงลำดับใหม่ให้ถูกต้องแม่นยำ
         async function fetchIoTData() {
             if (!API_URL || API_URL.includes("วาง_Web_App_URL")) {
                 console.warn("ยังไม่ได้ใส่ Web App URL ในโค้ดหน้าเว็บ");
@@ -241,25 +235,28 @@
                 let data = await response.json();
                 
                 if (data && data.length > 0) {
-                    // กรองเฉพาะแถวที่มีข้อมูล Speed หรือ Timestamp จริงๆ
+                    // กรองเฉพาะแถวที่มี Timestamp จริงๆ
                     let validData = data.filter(item => item.Timestamp && item.Timestamp !== "");
-                    if (validData.length === 0) validData = data; // fallback ถ้ากรองหมด
-
-                    let latest = validData[validData.length - 1]; // ข้อมูลล่าสุด
                     
-                    let speedVal = parseFloat(latest.Speed) || 0;
-                    let throughputVal = (speedVal * 30).toFixed(1);
+                    // จัดเรียงข้อมูลจากเวลาล่าสุดไปเก่าสุด (Descending order)
+                    validData.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
-                    // อัปเดตการแสดงผลการ์ดด้านบน
-                    document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
-                    document.getElementById('speedKgH').innerText = throughputVal;
-                    document.getElementById('currentTimestamp').innerText = latest.Timestamp ? new Date(latest.Timestamp).toLocaleString('th-TH') : '-';
+                    if (validData.length > 0) {
+                        let latest = validData[0]; // ข้อมูลล่าสุดตัวจริง
+                        let speedVal = parseFloat(latest.Speed) || 0;
+                        let throughputVal = (speedVal * 30).toFixed(1);
 
-                    // อัปเดตตารางประวัติ
-                    updateTable(validData.slice(-10).reverse()); // แสดง 10 รายการล่าสุด
+                        // อัปเดตการแสดงผลการ์ดด้านบน
+                        document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
+                        document.getElementById('speedKgH').innerText = throughputVal;
+                        document.getElementById('currentTimestamp').innerText = latest.Timestamp ? new Date(latest.Timestamp).toLocaleString('th-TH') : '-';
 
-                    // อัปเดตกราฟ
-                    updateChart(validData.slice(-15));
+                        // อัปเดตตารางประวัติ (แสดง 10 รายการล่าสุด)
+                        updateTable(validData.slice(0, 10));
+
+                        // อัปเดตกราฟ (นำ 15 รายการล่าสุดมากลับด้านเพื่อให้กราฟเรียงจากซ้ายไปขวาตามเวลา)
+                        updateChart(validData.slice(0, 15).reverse());
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching IoT data:", error);
@@ -301,7 +298,6 @@
             speedChart.update();
         }
 
-        // Safe message box instead of alert()
         function alertBox(message) {
             document.getElementById('modalMessage').innerText = message;
             document.getElementById('customModal').classList.remove('hidden');
@@ -313,7 +309,6 @@
             document.getElementById('customModal').classList.remove('flex');
         }
 
-        // Switch line simulation
         function switchLine() {
             const line = document.getElementById('lineSelector').value;
             document.getElementById('machineIdDisplay').innerText = `EXT-0${line}`;
