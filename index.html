@@ -305,7 +305,6 @@
                         document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
                         document.getElementById('speedKgH').innerText = throughputVal;
                         document.getElementById('outputPerDay').innerText = Number(outputDayVal).toLocaleString(); // แสดงผลมีคอมมาคั่นหลักพัน
-                        document.getElementById('currentTimestamp').innerText = latest.Timestamp ? new Date(latest.Timestamp).toLocaleString('th-TH') : '-';
 
                         updateTable(validData.slice(0, 10));
                         updateChart(validData.slice(0, 15).reverse());
