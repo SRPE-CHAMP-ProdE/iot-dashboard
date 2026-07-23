@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Manufacturing IoT Dashboard</title>
+    <title>Smart Manufacturing IoT Dashboard - EXT-09</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -31,9 +31,10 @@
                 <span class="text-xs font-semibold text-emerald-400">LIVE SYSTEM</span>
             </div>
             <select id="lineSelector" onchange="switchLine()" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
-                <option value="1">Line 01 (Prototype)</option>
+                <option value="1">Line 01</option>
                 <option value="2">Line 02</option>
                 <option value="3">Line 03</option>
+                <option value="9" selected>Line 09 (EXT-09)</option>
             </select>
         </div>
     </header>
@@ -43,12 +44,12 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Machine Number Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
-                <div class="absolute -right-4 -bottom-4 text-slate-800/40 text-7xl font-bold pointer-events-none">M1</div>
+                <div class="absolute -right-4 -bottom-4 text-slate-800/40 text-7xl font-bold pointer-events-none">M9</div>
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
                     <span>เลขเครื่อง (Machine ID)</span>
                     <i class="fa-solid fa-server text-blue-400"></i>
                 </div>
-                <div class="text-3xl font-extrabold text-white tracking-tight" id="machineIdDisplay">EXT-01</div>
+                <div class="text-3xl font-extrabold text-white tracking-tight" id="machineIdDisplay">EXT-09</div>
                 <div class="mt-2 text-xs text-emerald-400 flex items-center" id="machineStatusContainer">
                     <i class="fa-solid fa-circle-check mr-1.5" id="machineStatusIcon"></i> <span id="machineStatusText">สถานะปกติ (Running)</span>
                 </div>
@@ -226,14 +227,12 @@
             }
         });
 
-        // ดึงค่าตัวเลขน้ำหนัก (kg/m) ออกมาจากข้อความ เพื่อใช้คำนวณอัตโนมัติ
         function getNumericWeight() {
             let weightText = document.getElementById('prodWeight').innerText;
             let numeric = parseFloat(weightText.replace(/[^0-9.]/g, ''));
             return isNaN(numeric) ? 0 : numeric;
         }
 
-        // ฟังก์ชันแก้ไขสเปกสินค้า
         function editSpec() {
             let currentSize = document.getElementById('prodSize').innerText;
             let currentPn = document.getElementById('prodPn').innerText;
@@ -245,37 +244,43 @@
             let newPe = prompt("กรอก Material Grade (เช่น PE 100):", currentPe);
             let newWeight = prompt("กรอกน้ำหนัก Product Weight (เช่น 1.25 kg/m):", currentWeight);
 
+            let targetMachine = document.getElementById('machineIdDisplay').innerText;
+
             if (newSize !== null && newSize.trim() !== "") {
                 document.getElementById('prodSize').innerText = newSize;
-                localStorage.setItem('spec_size', newSize);
+                localStorage.setItem(`spec_size_${targetMachine}`, newSize);
             }
             if (newPn !== null && newPn.trim() !== "") {
                 document.getElementById('prodPn').innerText = newPn;
-                localStorage.setItem('spec_pn', newPn);
+                localStorage.setItem(`spec_pn_${targetMachine}`, newPn);
             }
             if (newPe !== null && newPe.trim() !== "") {
                 document.getElementById('prodPe').innerText = newPe;
-                localStorage.setItem('spec_pe', newPe);
+                localStorage.setItem(`spec_pe_${targetMachine}`, newPe);
             }
             if (newWeight !== null && newWeight.trim() !== "") {
                 let formattedWeight = newWeight.toLowerCase().includes('kg') ? newWeight : `${newWeight} kg/m`;
                 document.getElementById('prodWeight').innerText = formattedWeight;
-                localStorage.setItem('spec_weight', formattedWeight);
+                localStorage.setItem(`spec_weight_${targetMachine}`, formattedWeight);
             }
             
             fetchIoTData();
             alertBox("อัปเดตสเปกและคำนวณผลผลิตใหม่เรียบร้อยแล้ว");
         }
 
-        // โหลดค่าสเปกที่เคยบันทึกไว้ขึ้นมาแสดงอัตโนมัติ
+        function loadSpecForCurrentMachine() {
+            let targetMachine = document.getElementById('machineIdDisplay').innerText;
+            if(localStorage.getItem(`spec_size_${targetMachine}`)) document.getElementById('prodSize').innerText = localStorage.getItem(`spec_size_${targetMachine}`);
+            if(localStorage.getItem(`spec_pn_${targetMachine}`)) document.getElementById('prodPn').innerText = localStorage.getItem(`spec_pn_${targetMachine}`);
+            if(localStorage.getItem(`spec_pe_${targetMachine}`)) document.getElementById('prodPe').innerText = localStorage.getItem(`spec_pe_${targetMachine}`);
+            if(localStorage.getItem(`spec_weight_${targetMachine}`)) document.getElementById('prodWeight').innerText = localStorage.getItem(`spec_weight_${targetMachine}`);
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
-            if(localStorage.getItem('spec_size')) document.getElementById('prodSize').innerText = localStorage.getItem('spec_size');
-            if(localStorage.getItem('spec_pn')) document.getElementById('prodPn').innerText = localStorage.getItem('spec_pn');
-            if(localStorage.getItem('spec_pe')) document.getElementById('prodPe').innerText = localStorage.getItem('spec_pe');
-            if(localStorage.getItem('spec_weight')) document.getElementById('prodWeight').innerText = localStorage.getItem('spec_weight');
+            loadSpecForCurrentMachine();
+            fetchIoTData();
         });
 
-        // ฟังก์ชันดึงข้อมูลจาก Google Sheets และคำนวณ Throughput / Output ต่อวัน
         async function fetchIoTData() {
             if (!API_URL || API_URL.includes("วาง_Web_App_URL")) {
                 console.warn("ยังไม่ได้ใส่ Web App URL ในโค้ดหน้าเว็บ");
@@ -287,15 +292,24 @@
                 let data = await response.json();
                 
                 if (data && data.length > 0) {
-                    let validData = data.filter(item => item.Timestamp && item.Timestamp !== "");
+                    let targetMachine = document.getElementById('machineIdDisplay').innerText; // เช่น "EXT-09"
+
+                    let validData = data.filter(item => {
+                        if (!item.Timestamp || item.Timestamp === "") return false;
+                        let mId = item.Machine || item.MachineID || item.ID;
+                        if (mId) {
+                            return mId.toString().trim() === targetMachine;
+                        }
+                        return true; 
+                    });
+
                     validData.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
                     if (validData.length > 0) {
                         let latest = validData[0];
-                        let speedVal = parseFloat(latest.Speed) || 0; // cm/min
-                        let weightVal = getNumericWeight(); // kg/m
+                        let speedVal = parseFloat(latest.Speed) || 0; 
+                        let weightVal = getNumericWeight(); 
 
-                        // อัปเดตสถานะเครื่องตามความเร็ว (แก้ไขให้รองรับค่าน้อยกว่า 0.01 เพื่อป้องกันปัญหาทศนิยมปัดเศษ)
                         let statusContainer = document.getElementById('machineStatusContainer');
                         let statusIcon = document.getElementById('machineStatusIcon');
                         let statusText = document.getElementById('machineStatusText');
@@ -310,7 +324,6 @@
                             if (statusText) statusText.innerText = "สถานะปกติ (Running)";
                         }
 
-                        // สูตรคำนวณ: ความเร็ว (cm/min) * 0.6 = เมตร/ชั่วโมง -> คูณ น้ำหนัก (kg/m) = kg/h
                         let throughputVal = (speedVal * 0.6 * weightVal).toFixed(1);
                         let outputDayVal = (throughputVal * 24).toFixed(1);
 
@@ -333,13 +346,14 @@
 
             let currentSpecText = `${document.getElementById('prodSize').innerText} / ${document.getElementById('prodPn').innerText} / ${document.getElementById('prodPe').innerText} (${document.getElementById('prodWeight').innerText})`;
             let weightVal = getNumericWeight();
+            let targetMachine = document.getElementById('machineIdDisplay').innerText;
 
             records.forEach(row => {
                 let timeStr = row.Timestamp ? new Date(row.Timestamp).toLocaleString('th-TH') : '-';
                 let speed = parseFloat(row.Speed) || 0;
                 let tp = (speed * 0.6 * weightVal).toFixed(1);
+                let machineName = row.Machine || row.MachineID || row.ID || targetMachine;
 
-                // เปลี่ยนป้ายสถานะในตารางตามค่าความเร็ว (< 0.01 นับเป็นหยุดทำงาน)
                 let statusBadge = speed < 0.01 
                     ? `<span class="bg-red-500/10 text-red-400 text-xs px-2 py-0.5 rounded-full border border-red-500/20">หยุดทำงาน</span>`
                     : `<span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span>`;
@@ -347,7 +361,7 @@
                 let tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
-                    <td class="py-3 px-4 font-medium text-white">EXT-01</td>
+                    <td class="py-3 px-4 font-medium text-white">${machineName}</td>
                     <td class="py-3 px-4 text-slate-300">${timeStr}</td>
                     <td class="py-3 px-4 font-bold text-amber-400">${speed.toFixed(2)}</td>
                     <td class="py-3 px-4 text-cyan-400">${tp}</td>
@@ -383,22 +397,29 @@
 
         function switchLine() {
             const line = document.getElementById('lineSelector').value;
-            document.getElementById('machineIdDisplay').innerText = `EXT-0${line}`;
+            let machineId = line === '9' ? 'EXT-09' : `EXT-0${line}`;
+            document.getElementById('machineIdDisplay').innerText = machineId;
+            
             if(line === '2') {
                 document.getElementById('prodSize').innerText = 'Ø 63 mm';
                 document.getElementById('prodPn').innerText = 'PN 16';
+                document.getElementById('prodPe').innerText = 'PE 100';
                 document.getElementById('prodWeight').innerText = '0.55 kg/m';
             } else if(line === '3') {
                 document.getElementById('prodSize').innerText = 'Ø 200 mm';
                 document.getElementById('prodPn').innerText = 'PN 8';
+                document.getElementById('prodPe').innerText = 'PE 100';
                 document.getElementById('prodWeight').innerText = '3.80 kg/m';
             } else {
                 document.getElementById('prodSize').innerText = 'Ø 110 mm';
                 document.getElementById('prodPn').innerText = 'PN 10';
+                document.getElementById('prodPe').innerText = 'PE 100';
                 document.getElementById('prodWeight').innerText = '1.25 kg/m';
             }
+
+            loadSpecForCurrentMachine();
             fetchIoTData();
-            alertBox(`เปลี่ยนมุมมองไปยัง Line 0${line} เรียบร้อยแล้ว`);
+            alertBox(`เปลี่ยนมุมมองไปยัง ${machineId} เรียบร้อยแล้ว`);
         }
 
         function exportData() {
