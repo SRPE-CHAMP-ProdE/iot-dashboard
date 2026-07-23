@@ -114,7 +114,7 @@
 
                 <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-400 flex justify-between items-center">
                     <span>Order No: ORD-2026-0722</span>
-                    <button onclick="alertBox('เปิดหน้าต่างแก้ไขข้อมูลสินค้า')" class="text-blue-400 hover:text-blue-300 font-medium transition">แก้ไขสเปค <i class="fa-solid fa-pen ml-1"></i></button>
+                    <button onclick="editSpec()" class="text-blue-400 hover:text-blue-300 font-medium transition">แก้ไขสเปค <i class="fa-solid fa-pen ml-1"></i></button>
                 </div>
             </div>
 
@@ -182,8 +182,7 @@
     </footer>
 
     <script>
-        // ใส่ Web App URL ของคุณที่นี่ (ลงท้ายด้วย /exec)
-        const API_URL = "https://script.google.com/macros/s/AKfycbzBHUJ5tjZYPipEdFDMaLTVhTVQ6j4xdz1zC76r53p6nU4L70F4Sz9j29HU3SyfHMYE/exec"; // ใช้ URL ของคุณ
+        const API_URL = "https://script.google.com/macros/s/AKfycbzBHUJ5tjZYPipEdFDMaLTVhTVQ6j4xdz1zC76r53p6nU4L70F4Sz9j29HU3SyfHMYE/exec";
 
         // Initialize Chart.js
         const ctx = document.getElementById('speedChart').getContext('2d');
@@ -223,7 +222,40 @@
             }
         });
 
-        // ฟังก์ชันดึงข้อมูลจาก Google Sheets และเรียงลำดับใหม่ให้ถูกต้องแม่นยำ
+        // ฟังก์ชันแก้ไขสเปกสินค้า
+        function editSpec() {
+            let currentSize = document.getElementById('prodSize').innerText;
+            let currentPn = document.getElementById('prodPn').innerText;
+            let currentPe = document.getElementById('prodPe').innerText;
+
+            let newSize = prompt("กรอกขนาด Product Size (เช่น Ø 110 mm):", currentSize);
+            let newPn = prompt("กรอก Pressure Rating (เช่น PN 10):", currentPn);
+            let newPe = prompt("กรอก Material Grade (เช่น PE 100):", currentPe);
+
+            if (newSize !== null && newSize.trim() !== "") {
+                document.getElementById('prodSize').innerText = newSize;
+                localStorage.setItem('spec_size', newSize);
+            }
+            if (newPn !== null && newPn.trim() !== "") {
+                document.getElementById('prodPn').innerText = newPn;
+                localStorage.setItem('spec_pn', newPn);
+            }
+            if (newPe !== null && newPe.trim() !== "") {
+                document.getElementById('prodPe').innerText = newPe;
+                localStorage.setItem('spec_pe', newPe);
+            }
+            
+            alertBox("อัปเดตสเปกสินค้าเรียบร้อยแล้ว");
+        }
+
+        // โหลดค่าสเปกที่เคยบันทึกไว้ขึ้นมาแสดงอัตโนมัติ
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('spec_size')) document.getElementById('prodSize').innerText = localStorage.getItem('spec_size');
+            if(localStorage.getItem('spec_pn')) document.getElementById('prodPn').innerText = localStorage.getItem('spec_pn');
+            if(localStorage.getItem('spec_pe')) document.getElementById('prodPe').innerText = localStorage.getItem('spec_pe');
+        });
+
+        // ฟังก์ชันดึงข้อมูลจาก Google Sheets
         async function fetchIoTData() {
             if (!API_URL || API_URL.includes("วาง_Web_App_URL")) {
                 console.warn("ยังไม่ได้ใส่ Web App URL ในโค้ดหน้าเว็บ");
@@ -235,26 +267,19 @@
                 let data = await response.json();
                 
                 if (data && data.length > 0) {
-                    // กรองเฉพาะแถวที่มี Timestamp จริงๆ
                     let validData = data.filter(item => item.Timestamp && item.Timestamp !== "");
-                    
-                    // จัดเรียงข้อมูลจากเวลาล่าสุดไปเก่าสุด (Descending order)
                     validData.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
                     if (validData.length > 0) {
-                        let latest = validData[0]; // ข้อมูลล่าสุดตัวจริง
+                        let latest = validData[0];
                         let speedVal = parseFloat(latest.Speed) || 0;
                         let throughputVal = (speedVal * 30).toFixed(1);
 
-                        // อัปเดตการแสดงผลการ์ดด้านบน
                         document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
                         document.getElementById('speedKgH').innerText = throughputVal;
                         document.getElementById('currentTimestamp').innerText = latest.Timestamp ? new Date(latest.Timestamp).toLocaleString('th-TH') : '-';
 
-                        // อัปเดตตารางประวัติ (แสดง 10 รายการล่าสุด)
                         updateTable(validData.slice(0, 10));
-
-                        // อัปเดตกราฟ (นำ 15 รายการล่าสุดมากลับด้านเพื่อให้กราฟเรียงจากซ้ายไปขวาตามเวลา)
                         updateChart(validData.slice(0, 15).reverse());
                     }
                 }
@@ -266,6 +291,9 @@
         function updateTable(records) {
             let tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
+
+            // ดึงค่าสเปกปัจจุบันมาแสดงในตารางด้วย
+            let currentSpecText = `${document.getElementById('prodSize').innerText} / ${document.getElementById('prodPn').innerText} / ${document.getElementById('prodPe').innerText}`;
 
             records.forEach(row => {
                 let timeStr = row.Timestamp ? new Date(row.Timestamp).toLocaleString('th-TH') : '-';
@@ -279,7 +307,7 @@
                     <td class="py-3 px-4 text-slate-300">${timeStr}</td>
                     <td class="py-3 px-4 font-bold text-amber-400">${speed.toFixed(2)}</td>
                     <td class="py-3 px-4 text-cyan-400">${tp}</td>
-                    <td class="py-3 px-4 text-slate-300">Ø 110 mm / PN 10 / PE 100</td>
+                    <td class="py-3 px-4 text-slate-300">${currentSpecText}</td>
                     <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span></td>
                 `;
                 tbody.appendChild(tr);
@@ -329,7 +357,6 @@
             alertBox('กำลังเตรียมไฟล์ CSV สำหรับดาวน์โหลดข้อมูลการผลิต...');
         }
 
-        // ดึงข้อมูลทุกๆ 5 วินาที
         setInterval(fetchIoTData, 5000);
         window.onload = fetchIoTData;
     </script>
