@@ -49,8 +49,8 @@
                     <i class="fa-solid fa-server text-blue-400"></i>
                 </div>
                 <div class="text-3xl font-extrabold text-white tracking-tight" id="machineIdDisplay">EXT-01</div>
-                <div class="mt-2 text-xs text-emerald-400 flex items-center">
-                    <i class="fa-solid fa-circle-check mr-1.5"></i> สถานะปกติ (Running)
+                <div class="mt-2 text-xs text-emerald-400 flex items-center" id="machineStatusContainer">
+                    <i class="fa-solid fa-circle-check mr-1.5" id="machineStatusIcon"></i> <span id="machineStatusText">สถานะปกติ (Running)</span>
                 </div>
             </div>
 
@@ -74,7 +74,7 @@
                 <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากน้ำหนัก (kg/m) สดๆ</div>
             </div>
 
-            <!-- Estimated Output / Day Card (เพิ่มส่วนต่อยอดเอาท์พุตต่อวัน) -->
+            <!-- Estimated Output / Day Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
                     <span>คาดการณ์ผลผลิต/วัน (kg/day)</span>
@@ -109,7 +109,6 @@
                             <span class="text-sm text-slate-400">Material Grade (PE)</span>
                             <span class="text-base font-bold text-cyan-400" id="prodPe">PE 100</span>
                         </div>
-                        <!-- เพิ่มฟิลด์น้ำหนักสินค้า kg/m ตรงนี้ -->
                         <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
                             <span class="text-sm text-slate-400">Product Weight (น้ำหนัก)</span>
                             <span class="text-base font-bold text-amber-400" id="prodWeight">1.25 kg/m</span>
@@ -234,7 +233,7 @@
             return isNaN(numeric) ? 0 : numeric;
         }
 
-        // ฟังก์ชันแก้ไขสเปกสินค้า (เพิ่มน้ำหนัก kg/m)
+        // ฟังก์ชันแก้ไขสเปกสินค้า
         function editSpec() {
             let currentSize = document.getElementById('prodSize').innerText;
             let currentPn = document.getElementById('prodPn').innerText;
@@ -259,13 +258,11 @@
                 localStorage.setItem('spec_pe', newPe);
             }
             if (newWeight !== null && newWeight.trim() !== "") {
-                // บังคับให้ลงท้ายด้วย kg/m เพื่อความสวยงาม หากผู้ใช้กรอกมาแค่ตัวเลข
                 let formattedWeight = newWeight.toLowerCase().includes('kg') ? newWeight : `${newWeight} kg/m`;
                 document.getElementById('prodWeight').innerText = formattedWeight;
                 localStorage.setItem('spec_weight', formattedWeight);
             }
             
-            // เรียกอัปเดตการคำนวณใหม่ทันทีหลังเปลี่ยนค่าสเปก
             fetchIoTData();
             alertBox("อัปเดตสเปกและคำนวณผลผลิตใหม่เรียบร้อยแล้ว");
         }
@@ -298,13 +295,28 @@
                         let speedVal = parseFloat(latest.Speed) || 0; // cm/min
                         let weightVal = getNumericWeight(); // kg/m
 
+                        // อัปเดตสถานะเครื่องตามความเร็ว (Speed = 0 แสดงหยุดทำงานสีแดง, มากกว่า 0 แสดง Running สีเขียว)
+                        let statusContainer = document.getElementById('machineStatusContainer');
+                        let statusIcon = document.getElementById('machineStatusIcon');
+                        let statusText = document.getElementById('machineStatusText');
+
+                        if (speedVal === 0) {
+                            if (statusContainer) statusContainer.className = "mt-2 text-xs text-red-400 flex items-center";
+                            if (statusIcon) statusIcon.className = "fa-solid fa-circle-xmark mr-1.5";
+                            if (statusText) statusText.innerText = "สถานะหยุดทำงาน (Stopped)";
+                        } else {
+                            if (statusContainer) statusContainer.className = "mt-2 text-xs text-emerald-400 flex items-center";
+                            if (statusIcon) statusIcon.className = "fa-solid fa-circle-check mr-1.5";
+                            if (statusText) statusText.innerText = "สถานะปกติ (Running)";
+                        }
+
                         // สูตรคำนวณ: ความเร็ว (cm/min) * 0.6 = เมตร/ชั่วโมง -> คูณ น้ำหนัก (kg/m) = kg/h
                         let throughputVal = (speedVal * 0.6 * weightVal).toFixed(1);
-                        let outputDayVal = (throughputVal * 24).toFixed(1); // ต่อยอดคำนวณเอาท์พุตต่อวัน (kg/day)
+                        let outputDayVal = (throughputVal * 24).toFixed(1);
 
                         document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
                         document.getElementById('speedKgH').innerText = throughputVal;
-                        document.getElementById('outputPerDay').innerText = Number(outputDayVal).toLocaleString(); // แสดงผลมีคอมมาคั่นหลักพัน
+                        document.getElementById('outputPerDay').innerText = Number(outputDayVal).toLocaleString();
 
                         updateTable(validData.slice(0, 10));
                         updateChart(validData.slice(0, 15).reverse());
@@ -327,6 +339,11 @@
                 let speed = parseFloat(row.Speed) || 0;
                 let tp = (speed * 0.6 * weightVal).toFixed(1);
 
+                // เปลี่ยนป้ายสถานะในตารางตามค่าความเร็ว
+                let statusBadge = speed === 0 
+                    ? `<span class="bg-red-500/10 text-red-400 text-xs px-2 py-0.5 rounded-full border border-red-500/20">หยุดทำงาน</span>`
+                    : `<span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span>`;
+
                 let tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
                 tr.innerHTML = `
@@ -335,7 +352,7 @@
                     <td class="py-3 px-4 font-bold text-amber-400">${speed.toFixed(2)}</td>
                     <td class="py-3 px-4 text-cyan-400">${tp}</td>
                     <td class="py-3 px-4 text-slate-300">${currentSpecText}</td>
-                    <td class="py-3 px-4 text-center"><span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span></td>
+                    <td class="py-3 px-4 text-center">${statusBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -380,7 +397,7 @@
                 document.getElementById('prodPn').innerText = 'PN 10';
                 document.getElementById('prodWeight').innerText = '1.25 kg/m';
             }
-            fetchIoTData(); // คำนวณใหม่ทันทีที่เปลี่ยนไลน์ผลิต
+            fetchIoTData();
             alertBox(`เปลี่ยนมุมมองไปยัง Line 0${line} เรียบร้อยแล้ว`);
         }
 
