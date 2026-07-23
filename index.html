@@ -71,17 +71,17 @@
                     <i class="fa-solid fa-scale-balanced text-cyan-400"></i>
                 </div>
                 <div class="text-3xl font-extrabold text-cyan-400 tracking-tight"><span id="speedKgH">0.0</span> <span class="text-sm font-normal text-slate-400">kg/h</span></div>
-                <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากความเร็วเรียลไทม์</div>
+                <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากน้ำหนัก (kg/m) สดๆ</div>
             </div>
 
-            <!-- Timestamp Card -->
+            <!-- Estimated Output / Day Card (เพิ่มส่วนต่อยอดเอาท์พุตต่อวัน) -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
-                    <span>เวลาข้อมูลล่าสุด</span>
-                    <i class="fa-regular fa-clock text-purple-400"></i>
+                    <span>คาดการณ์ผลผลิต/วัน (kg/day)</span>
+                    <i class="fa-solid fa-calendar-day text-purple-400"></i>
                 </div>
-                <div class="text-sm font-bold text-white tracking-tight truncate mt-1" id="currentTimestamp">-</div>
-                <div class="mt-2 text-xs text-slate-400">ซิงค์กับ ESP32 อัตโนมัติ</div>
+                <div class="text-3xl font-extrabold text-purple-400 tracking-tight"><span id="outputPerDay">0.0</span> <span class="text-sm font-normal text-slate-400">kg</span></div>
+                <div class="mt-2 text-xs text-slate-400">ประมาณการสะสม 24 ชั่วโมง</div>
             </div>
         </div>
 
@@ -108,6 +108,11 @@
                         <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
                             <span class="text-sm text-slate-400">Material Grade (PE)</span>
                             <span class="text-base font-bold text-cyan-400" id="prodPe">PE 100</span>
+                        </div>
+                        <!-- เพิ่มฟิลด์น้ำหนักสินค้า kg/m ตรงนี้ -->
+                        <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
+                            <span class="text-sm text-slate-400">Product Weight (น้ำหนัก)</span>
+                            <span class="text-base font-bold text-amber-400" id="prodWeight">1.25 kg/m</span>
                         </div>
                     </div>
                 </div>
@@ -153,7 +158,7 @@
                             <th class="py-3 px-4">เวลา (Timestamp)</th>
                             <th class="py-3 px-4">ความเร็ว (cm/min)</th>
                             <th class="py-3 px-4">Throughput (kg/h)</th>
-                            <th class="py-3 px-4">สเปคสินค้า</th>
+                            <th class="py-3 px-4">สเปคสินค้า / น้ำหนัก</th>
                             <th class="py-3 px-4 text-center">สถานะ</th>
                         </tr>
                     </thead>
@@ -222,15 +227,24 @@
             }
         });
 
-        // ฟังก์ชันแก้ไขสเปกสินค้า
+        // ดึงค่าตัวเลขน้ำหนัก (kg/m) ออกมาจากข้อความ เพื่อใช้คำนวณอัตโนมัติ
+        function getNumericWeight() {
+            let weightText = document.getElementById('prodWeight').innerText;
+            let numeric = parseFloat(weightText.replace(/[^0-9.]/g, ''));
+            return isNaN(numeric) ? 0 : numeric;
+        }
+
+        // ฟังก์ชันแก้ไขสเปกสินค้า (เพิ่มน้ำหนัก kg/m)
         function editSpec() {
             let currentSize = document.getElementById('prodSize').innerText;
             let currentPn = document.getElementById('prodPn').innerText;
             let currentPe = document.getElementById('prodPe').innerText;
+            let currentWeight = document.getElementById('prodWeight').innerText;
 
             let newSize = prompt("กรอกขนาด Product Size (เช่น Ø 110 mm):", currentSize);
             let newPn = prompt("กรอก Pressure Rating (เช่น PN 10):", currentPn);
             let newPe = prompt("กรอก Material Grade (เช่น PE 100):", currentPe);
+            let newWeight = prompt("กรอกน้ำหนัก Product Weight (เช่น 1.25 kg/m):", currentWeight);
 
             if (newSize !== null && newSize.trim() !== "") {
                 document.getElementById('prodSize').innerText = newSize;
@@ -244,8 +258,16 @@
                 document.getElementById('prodPe').innerText = newPe;
                 localStorage.setItem('spec_pe', newPe);
             }
+            if (newWeight !== null && newWeight.trim() !== "") {
+                // บังคับให้ลงท้ายด้วย kg/m เพื่อความสวยงาม หากผู้ใช้กรอกมาแค่ตัวเลข
+                let formattedWeight = newWeight.toLowerCase().includes('kg') ? newWeight : `${newWeight} kg/m`;
+                document.getElementById('prodWeight').innerText = formattedWeight;
+                localStorage.setItem('spec_weight', formattedWeight);
+            }
             
-            alertBox("อัปเดตสเปกสินค้าเรียบร้อยแล้ว");
+            // เรียกอัปเดตการคำนวณใหม่ทันทีหลังเปลี่ยนค่าสเปก
+            fetchIoTData();
+            alertBox("อัปเดตสเปกและคำนวณผลผลิตใหม่เรียบร้อยแล้ว");
         }
 
         // โหลดค่าสเปกที่เคยบันทึกไว้ขึ้นมาแสดงอัตโนมัติ
@@ -253,9 +275,10 @@
             if(localStorage.getItem('spec_size')) document.getElementById('prodSize').innerText = localStorage.getItem('spec_size');
             if(localStorage.getItem('spec_pn')) document.getElementById('prodPn').innerText = localStorage.getItem('spec_pn');
             if(localStorage.getItem('spec_pe')) document.getElementById('prodPe').innerText = localStorage.getItem('spec_pe');
+            if(localStorage.getItem('spec_weight')) document.getElementById('prodWeight').innerText = localStorage.getItem('spec_weight');
         });
 
-        // ฟังก์ชันดึงข้อมูลจาก Google Sheets
+        // ฟังก์ชันดึงข้อมูลจาก Google Sheets และคำนวณ Throughput / Output ต่อวัน
         async function fetchIoTData() {
             if (!API_URL || API_URL.includes("วาง_Web_App_URL")) {
                 console.warn("ยังไม่ได้ใส่ Web App URL ในโค้ดหน้าเว็บ");
@@ -272,11 +295,16 @@
 
                     if (validData.length > 0) {
                         let latest = validData[0];
-                        let speedVal = parseFloat(latest.Speed) || 0;
-                        let throughputVal = (speedVal * 30).toFixed(1);
+                        let speedVal = parseFloat(latest.Speed) || 0; // cm/min
+                        let weightVal = getNumericWeight(); // kg/m
+
+                        // สูตรคำนวณ: ความเร็ว (cm/min) * 0.6 = เมตร/ชั่วโมง -> คูณ น้ำหนัก (kg/m) = kg/h
+                        let throughputVal = (speedVal * 0.6 * weightVal).toFixed(1);
+                        let outputDayVal = (throughputVal * 24).toFixed(1); // ต่อยอดคำนวณเอาท์พุตต่อวัน (kg/day)
 
                         document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
                         document.getElementById('speedKgH').innerText = throughputVal;
+                        document.getElementById('outputPerDay').innerText = Number(outputDayVal).toLocaleString(); // แสดงผลมีคอมมาคั่นหลักพัน
                         document.getElementById('currentTimestamp').innerText = latest.Timestamp ? new Date(latest.Timestamp).toLocaleString('th-TH') : '-';
 
                         updateTable(validData.slice(0, 10));
@@ -292,13 +320,13 @@
             let tbody = document.getElementById('historyTableBody');
             tbody.innerHTML = '';
 
-            // ดึงค่าสเปกปัจจุบันมาแสดงในตารางด้วย
-            let currentSpecText = `${document.getElementById('prodSize').innerText} / ${document.getElementById('prodPn').innerText} / ${document.getElementById('prodPe').innerText}`;
+            let currentSpecText = `${document.getElementById('prodSize').innerText} / ${document.getElementById('prodPn').innerText} / ${document.getElementById('prodPe').innerText} (${document.getElementById('prodWeight').innerText})`;
+            let weightVal = getNumericWeight();
 
             records.forEach(row => {
                 let timeStr = row.Timestamp ? new Date(row.Timestamp).toLocaleString('th-TH') : '-';
                 let speed = parseFloat(row.Speed) || 0;
-                let tp = (speed * 30).toFixed(1);
+                let tp = (speed * 0.6 * weightVal).toFixed(1);
 
                 let tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-800/40 transition";
@@ -343,13 +371,17 @@
             if(line === '2') {
                 document.getElementById('prodSize').innerText = 'Ø 63 mm';
                 document.getElementById('prodPn').innerText = 'PN 16';
+                document.getElementById('prodWeight').innerText = '0.55 kg/m';
             } else if(line === '3') {
                 document.getElementById('prodSize').innerText = 'Ø 200 mm';
                 document.getElementById('prodPn').innerText = 'PN 8';
+                document.getElementById('prodWeight').innerText = '3.80 kg/m';
             } else {
                 document.getElementById('prodSize').innerText = 'Ø 110 mm';
                 document.getElementById('prodPn').innerText = 'PN 10';
+                document.getElementById('prodWeight').innerText = '1.25 kg/m';
             }
+            fetchIoTData(); // คำนวณใหม่ทันทีที่เปลี่ยนไลน์ผลิต
             alertBox(`เปลี่ยนมุมมองไปยัง Line 0${line} เรียบร้อยแล้ว`);
         }
 
