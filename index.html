@@ -295,12 +295,12 @@
                         let speedVal = parseFloat(latest.Speed) || 0; // cm/min
                         let weightVal = getNumericWeight(); // kg/m
 
-                        // อัปเดตสถานะเครื่องตามความเร็ว (Speed = 0 แสดงหยุดทำงานสีแดง, มากกว่า 0 แสดง Running สีเขียว)
+                        // อัปเดตสถานะเครื่องตามความเร็ว (แก้ไขให้รองรับค่าน้อยกว่า 0.01 เพื่อป้องกันปัญหาทศนิยมปัดเศษ)
                         let statusContainer = document.getElementById('machineStatusContainer');
                         let statusIcon = document.getElementById('machineStatusIcon');
                         let statusText = document.getElementById('machineStatusText');
 
-                        if (speedVal === 0) {
+                        if (speedVal < 0.01) {
                             if (statusContainer) statusContainer.className = "mt-2 text-xs text-red-400 flex items-center";
                             if (statusIcon) statusIcon.className = "fa-solid fa-circle-xmark mr-1.5";
                             if (statusText) statusText.innerText = "สถานะหยุดทำงาน (Stopped)";
@@ -339,8 +339,8 @@
                 let speed = parseFloat(row.Speed) || 0;
                 let tp = (speed * 0.6 * weightVal).toFixed(1);
 
-                // เปลี่ยนป้ายสถานะในตารางตามค่าความเร็ว
-                let statusBadge = speed === 0 
+                // เปลี่ยนป้ายสถานะในตารางตามค่าความเร็ว (< 0.01 นับเป็นหยุดทำงาน)
+                let statusBadge = speed < 0.01 
                     ? `<span class="bg-red-500/10 text-red-400 text-xs px-2 py-0.5 rounded-full border border-red-500/20">หยุดทำงาน</span>`
                     : `<span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">ปกติ</span>`;
 
