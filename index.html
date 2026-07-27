@@ -41,9 +41,8 @@
 
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- Top Cards Grid (ปรับเป็น 5 คอลัมน์สำหรับจอใหญ่) -->
+        <!-- Top Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <!-- Machine Number Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 text-slate-800/40 text-7xl font-bold pointer-events-none">M9</div>
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
@@ -56,7 +55,6 @@
                 </div>
             </div>
 
-            <!-- Speed (cm/min) Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
                     <span>ความเร็ว (Line Speed)</span>
@@ -66,7 +64,6 @@
                 <div class="mt-2 text-xs text-slate-400">ซิงค์จาก Google Sheets สดๆ</div>
             </div>
 
-            <!-- Throughput (kg/h) Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
                     <span>อัตราการผลิต (Throughput)</span>
@@ -76,7 +73,6 @@
                 <div class="mt-2 text-xs text-cyan-400/80">คำนวณจากน้ำหนัก (kg/m) สดๆ</div>
             </div>
 
-            <!-- Estimated Output / Day (kg/day) Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
                     <span>ผลผลิต/วัน (kg/day)</span>
@@ -86,7 +82,6 @@
                 <div class="mt-2 text-xs text-slate-400">ประมาณการสะสม 24 ชั่วโมง</div>
             </div>
 
-            <!-- NEW: Output Length / Day (m/day) Card -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur relative overflow-hidden sm:col-span-2 xl:col-span-1">
                 <div class="flex items-center justify-between text-slate-400 text-sm font-medium mb-2">
                     <span>ความยาว/วัน (m/day)</span>
@@ -111,11 +106,11 @@
                     <div class="space-y-4">
                         <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
                             <span class="text-sm text-slate-400">Product Size (ขนาด)</span>
-                            <span class="text-base font-bold text-white" id="prodSize">Ø 110 mm</span>
+                            <span class="text-base font-bold text-white" id="prodSize">Ø 225 mm</span>
                         </div>
                         <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
                             <span class="text-sm text-slate-400">Pressure Rating (PN)</span>
-                            <span class="text-base font-bold text-emerald-400" id="prodPn">PN 10</span>
+                            <span class="text-base font-bold text-emerald-400" id="prodPn">PN 8</span>
                         </div>
                         <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
                             <span class="text-sm text-slate-400">Material Grade (PE)</span>
@@ -123,7 +118,7 @@
                         </div>
                         <div class="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
                             <span class="text-sm text-slate-400">Product Weight (น้ำหนัก)</span>
-                            <span class="text-base font-bold text-amber-400" id="prodWeight">1.25 kg/m</span>
+                            <span class="text-base font-bold text-amber-400" id="prodWeight">5.85 kg/m</span>
                         </div>
                     </div>
                 </div>
@@ -244,51 +239,56 @@
             return isNaN(numeric) ? 0 : numeric;
         }
 
-        function editSpec() {
-            let currentSize = document.getElementById('prodSize').innerText;
-            let currentPn = document.getElementById('prodPn').innerText;
-            let currentPe = document.getElementById('prodPe').innerText;
-            let currentWeight = document.getElementById('prodWeight').innerText;
-
-            let newSize = prompt("กรอกขนาด Product Size (เช่น Ø 110 mm):", currentSize);
-            let newPn = prompt("กรอก Pressure Rating (เช่น PN 10):", currentPn);
-            let newPe = prompt("กรอก Material Grade (เช่น PE 100):", currentPe);
-            let newWeight = prompt("กรอกน้ำหนัก Product Weight (เช่น 1.25 kg/m):", currentWeight);
-
-            let targetMachine = document.getElementById('machineIdDisplay').innerText;
-
-            if (newSize !== null && newSize.trim() !== "") {
-                document.getElementById('prodSize').innerText = newSize;
-                localStorage.setItem(`spec_size_${targetMachine}`, newSize);
+        // ดึงข้อมูล Spec จาก Google Sheets (ชีท Config) มาแสดงผลให้ทุกคนเห็นตรงกัน
+        async function loadSpecFromSheet() {
+            try {
+                let response = await fetch(`${API_URL}?action=getSpec`);
+                let spec = await response.json();
+                if (spec) {
+                    if (spec.size !== undefined) document.getElementById('prodSize').innerText = `Ø ${spec.size} mm`;
+                    if (spec.pressure !== undefined) document.getElementById('prodPn').innerText = `PN ${spec.pressure}`;
+                    if (spec.grade !== undefined) document.getElementById('prodPe').innerText = `PE ${spec.grade}`;
+                    if (spec.weight !== undefined) document.getElementById('prodWeight').innerText = `${spec.weight} kg/m`;
+                }
+            } catch (error) {
+                console.error("Error loading spec:", error);
             }
-            if (newPn !== null && newPn.trim() !== "") {
-                document.getElementById('prodPn').innerText = newPn;
-                localStorage.setItem(`spec_pn_${targetMachine}`, newPn);
-            }
-            if (newPe !== null && newPe.trim() !== "") {
-                document.getElementById('prodPe').innerText = newPe;
-                localStorage.setItem(`spec_pe_${targetMachine}`, newPe);
-            }
-            if (newWeight !== null && newWeight.trim() !== "") {
-                let formattedWeight = newWeight.toLowerCase().includes('kg') ? newWeight : `${newWeight} kg/m`;
-                document.getElementById('prodWeight').innerText = formattedWeight;
-                localStorage.setItem(`spec_weight_${targetMachine}`, formattedWeight);
-            }
-            
-            fetchIoTData();
-            alertBox("อัปเดตสเปกและคำนวณผลผลิตใหม่เรียบร้อยแล้ว");
         }
 
-        function loadSpecForCurrentMachine() {
-            let targetMachine = document.getElementById('machineIdDisplay').innerText;
-            if(localStorage.getItem(`spec_size_${targetMachine}`)) document.getElementById('prodSize').innerText = localStorage.getItem(`spec_size_${targetMachine}`);
-            if(localStorage.getItem(`spec_pn_${targetMachine}`)) document.getElementById('prodPn').innerText = localStorage.getItem(`spec_pn_${targetMachine}`);
-            if(localStorage.getItem(`spec_pe_${targetMachine}`)) document.getElementById('prodPe').innerText = localStorage.getItem(`spec_pe_${targetMachine}`);
-            if(localStorage.getItem(`spec_weight_${targetMachine}`)) document.getElementById('prodWeight').innerText = localStorage.getItem(`spec_weight_${targetMachine}`);
+        // ฟังก์ชันแก้ไขสเปคและส่งค่าตรงขึ้น Google Sheets
+        async function editSpec() {
+            let currentSize = document.getElementById('prodSize').innerText.replace(/[^0-9.]/g, '');
+            let currentPn = document.getElementById('prodPn').innerText.replace(/[^0-9.]/g, '');
+            let currentPe = document.getElementById('prodPe').innerText.replace(/[^0-9.]/g, '');
+            let currentWeight = document.getElementById('prodWeight').innerText.replace(/[^0-9.]/g, '');
+
+            let newSize = prompt("กรอกขนาด Product Size (เช่น 225):", currentSize);
+            let newPn = prompt("กรอก Pressure Rating (เช่น 8):", currentPn);
+            let newPe = prompt("กรอก Material Grade (เช่น 100):", currentPe);
+            let newWeight = prompt("กรอกน้ำหนัก Product Weight (เช่น 5.85):", currentWeight);
+
+            if (newSize !== null && newPn !== null && newPe !== null && newWeight !== null) {
+                try {
+                    let updateUrl = `${API_URL}?action=updateSpec&size=${encodeURIComponent(newSize)}&pressure=${encodeURIComponent(newPn)}&grade=${encodeURIComponent(newPe)}&weight=${encodeURIComponent(newWeight)}`;
+                    let res = await fetch(updateUrl);
+                    let result = await res.json();
+
+                    if (result.status === "success") {
+                        await loadSpecFromSheet();
+                        fetchIoTData();
+                        alertBox("อัปเดตสเปกและซิงค์ขึ้น Google Sheets เรียบร้อยแล้ว (ทุกคนจะเห็นค่าเดียวกัน)");
+                    } else {
+                        alertBox("เกิดข้อผิดพลาดในการบันทึกสเปค");
+                    }
+                } catch (err) {
+                    console.error("Update error:", err);
+                    alertBox("ไม่สามารถเชื่อมต่อกับ Google Sheets ได้");
+                }
+            }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadSpecForCurrentMachine();
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadSpecFromSheet();
             fetchIoTData();
         });
 
@@ -303,7 +303,7 @@
                 let data = await response.json();
                 
                 if (data && data.length > 0) {
-                    let targetMachine = document.getElementById('machineIdDisplay').innerText; // เช่น "EXT-09"
+                    let targetMachine = document.getElementById('machineIdDisplay').innerText;
 
                     let validData = data.filter(item => {
                         if (!item.Timestamp || item.Timestamp === "") return false;
@@ -337,7 +337,7 @@
 
                         let throughputVal = (speedVal * 0.6 * weightVal).toFixed(1);
                         let outputDayVal = (throughputVal * 24).toFixed(1);
-                        let outputMeterDayVal = (speedVal * 14.4).toFixed(1); // cm/min แปลงเป็น m/day
+                        let outputMeterDayVal = (speedVal * 14.4).toFixed(1);
 
                         document.getElementById('speedCmMin').innerText = speedVal.toFixed(2);
                         document.getElementById('speedKgH').innerText = throughputVal;
@@ -408,29 +408,12 @@
             document.getElementById('customModal').classList.remove('flex');
         }
 
-        function switchLine() {
+        async function switchLine() {
             const line = document.getElementById('lineSelector').value;
             let machineId = line === '9' ? 'EXT-09' : `EXT-0${line}`;
             document.getElementById('machineIdDisplay').innerText = machineId;
             
-            if(line === '2') {
-                document.getElementById('prodSize').innerText = 'Ø 63 mm';
-                document.getElementById('prodPn').innerText = 'PN 16';
-                document.getElementById('prodPe').innerText = 'PE 100';
-                document.getElementById('prodWeight').innerText = '0.55 kg/m';
-            } else if(line === '3') {
-                document.getElementById('prodSize').innerText = 'Ø 200 mm';
-                document.getElementById('prodPn').innerText = 'PN 8';
-                document.getElementById('prodPe').innerText = 'PE 100';
-                document.getElementById('prodWeight').innerText = '3.80 kg/m';
-            } else {
-                document.getElementById('prodSize').innerText = 'Ø 110 mm';
-                document.getElementById('prodPn').innerText = 'PN 10';
-                document.getElementById('prodPe').innerText = 'PE 100';
-                document.getElementById('prodWeight').innerText = '1.25 kg/m';
-            }
-
-            loadSpecForCurrentMachine();
+            await loadSpecFromSheet();
             fetchIoTData();
             alertBox(`เปลี่ยนมุมมองไปยัง ${machineId} เรียบร้อยแล้ว`);
         }
@@ -440,7 +423,6 @@
         }
 
         setInterval(fetchIoTData, 5000);
-        window.onload = fetchIoTData;
     </script>
 </body>
 </html>
