@@ -314,6 +314,21 @@
                         return true; 
                     });
 
+                    // 1. เรียงข้อมูลจากเก่าไปใหม่ เพื่อไล่ตรวจสอบและแทนที่ค่าผิดปกติด้วยค่าก่อนหน้า
+                    validData.sort((a, b) => new Date(a.Timestamp) - new Date(b.Timestamp));
+
+                    let lastValidSpeed = 0.0;
+                    validData.forEach(item => {
+                        let s = parseFloat(item.Speed);
+                        // เงื่อนไข: ถ้าค่าความเร็วติดลบมากกว่า -150 (เช่น -1018) ให้แทนที่ด้วยค่าก่อนหน้า
+                        if (isNaN(s) || s < -150) {
+                            item.Speed = lastValidSpeed;
+                        } else {
+                            lastValidSpeed = s; // เก็บค่าปกติล่าสุดไว้ใช้สำรอง
+                        }
+                    });
+
+                    // 2. สลับกลับให้ข้อมูลล่าสุดอยู่บนสุดสำหรับแสดงผล
                     validData.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
                     if (validData.length > 0) {
